@@ -37,7 +37,6 @@ docker compose up --build
 | Username | `admin`            |
 | Password | `admin`        |
 | Email    | `admin@gmail.com` |
-Change these in `.env` before production deployment.
 ## Local Development (without Docker)
 bash
 cd backend
