@@ -1,6 +1,12 @@
 # Library Management System
 
 A full-stack Library Management System. It integrates the [Kaggle Books dataset](https://www.kaggle.com/datasets/saurabhbagchi/books-dataset), provides REST APIs, role-based authentication, borrowing/reservation workflows, analytics reports, and a Dockerized three-container architecture.
+## Architecture
+┌─────────────┐     ┌─────────────┐     ┌──────────────┐
+│  Frontend   │────▶│   Backend   │────▶│  PostgreSQL  │
+│  (Nginx)    │     │  (FastAPI)  │     │   Database   │
+│  :8080      │     │  :8000      │     │   :5432      │
+└─────────────┘     └─────────────┘     └──────────────┘
 ## Features
 - **User management**: registration, login/logout, bcrypt password hashing, JWT auth
 - **Roles**: Administrator, Librarian, Student (RBAC)
@@ -46,7 +52,7 @@ Serve the `frontend/` folder with any static server, or use Docker/nginx proxy t
 | Table | Purpose |
 |-------|---------|
 | `users` | Accounts, hashed passwords, roles |
-| `books` | ISBN, title,cover, author, publisher, year, copy counts |
+| `books` | ISBN, title, author, publisher, year, copy counts |
 | `borrow_transactions` | Borrow/return lifecycle and status |
 | `reservations` | Holds for unavailable books |
 ## REST API Endpoints
@@ -72,4 +78,25 @@ The import script (`backend/scripts/import_books.py`):
 - Cleans publication years and text fields
 - Deduplicates by ISBN
 - Loads books with configurable copy counts
-
+## Project Structure
+library-management-system/
+├── backend/
+│   ├── app/
+│   │   ├── routers/      # REST endpoints
+│   │   ├── services/     # Business logic
+│   │   ├── models.py     # SQLAlchemy models
+│   │   └── main.py
+│   ├── scripts/
+│   │   └── import_books.py
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/
+│   ├── index.html
+│   ├── css/
+│   ├── js/
+│   ├── nginx.conf
+│   └── Dockerfile
+├── data/
+│   └── Books.csv         # Sample / Kaggle dataset
+├── docker-compose.yml
+└── README.md
