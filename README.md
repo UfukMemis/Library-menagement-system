@@ -52,7 +52,7 @@ Serve the `frontend/` folder with any static server, or use Docker/nginx proxy t
 | Table | Purpose |
 |-------|---------|
 | `users` | Accounts, hashed passwords, roles |
-| `books` | ISBN, title, author, publisher, year, copy counts |
+| `books` | ISBN, title,cover, author, publisher, year, copy counts |
 | `borrow_transactions` | Borrow/return lifecycle and status |
 | `reservations` | Holds for unavailable books |
 ## REST API Endpoints
