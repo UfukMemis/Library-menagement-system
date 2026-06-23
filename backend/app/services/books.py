@@ -4,8 +4,12 @@ from typing import Optional
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from pathlib import Path
+
+from app.config import settings
 from app.models import Book, BorrowStatus, BorrowTransaction, Reservation, ReservationStatus, User
 from app.schemas import BookCreate, BookUpdate
+from app.services.covers import delete_cover_files
 
 
 def book_availability_status(book: Book) -> str:
@@ -26,6 +30,7 @@ def serialize_book(book: Book) -> dict:
         "total_copies": book.total_copies,
         "available_copies": book.available_copies,
         "availability_status": book_availability_status(book),
+        "cover_url": book.cover_url,
         "created_at": book.created_at,
     }
 
@@ -147,6 +152,7 @@ def delete_book(db: Session, isbn: str) -> None:
     if pending_reservations > 0:
         raise ValueError("Cannot delete a book with pending reservations")
 
+    delete_cover_files(Path(settings.upload_dir), book.isbn)
     db.delete(book)
     db.commit()
 

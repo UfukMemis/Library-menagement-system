@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     admin_password: str = "Admin123!"
     borrow_days: int = 14
     max_borrows_per_user: int = 5
+    upload_dir: str = "uploads"
 
     class Config:
         env_file = ".env"
@@ -19,6 +20,14 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def upload_path(self):
+        from pathlib import Path
+
+        path = Path(self.upload_dir)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
 
 settings = Settings()

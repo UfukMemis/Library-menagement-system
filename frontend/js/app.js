@@ -35,14 +35,28 @@ function escapeHtml(text) {
     .replaceAll('"', "&quot;");
 }
 
-function bookCoverHtml(isbn, title) {
-  const src = `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-S.jpg`;
+function bookCoverHtml(isbn, title, coverUrl) {
+  const fallback = `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-S.jpg`;
+  const src = coverUrl || fallback;
   const initial = escapeHtml(title.trim().charAt(0).toUpperCase() || "?");
+  const fallbackAttr = coverUrl
+    ? `onerror="this.onerror=null; this.src='${fallback}';"`
+    : `onerror="this.remove(); this.parentElement.classList.add('book-cover--placeholder');"`;
   return `
     <div class="book-cover" data-initial="${initial}">
-      <img src="${src}" alt="Cover of ${escapeHtml(title)}" loading="lazy"
-           onerror="this.remove(); this.parentElement.classList.add('book-cover--placeholder');" />
+      <img src="${escapeHtml(src)}" alt="Cover of ${escapeHtml(title)}" loading="lazy" ${fallbackAttr} />
     </div>`;
+}
+
+function setCoverPreview(src) {
+  const preview = document.getElementById("book-cover-preview");
+  if (!src) {
+    preview.innerHTML = "";
+    preview.classList.add("hidden");
+    return;
+  }
+  preview.innerHTML = `<img src="${escapeHtml(src)}" alt="Cover preview" />`;
+  preview.classList.remove("hidden");
 }
 
 function isStaff(role) {
@@ -102,7 +116,7 @@ async function loadBooks() {
           <tr>
             <td>${book.isbn}</td>
             <td>${escapeHtml(book.title)}</td>
-            <td class="book-cover-cell">${bookCoverHtml(book.isbn, book.title)}</td>
+            <td class="book-cover-cell">${bookCoverHtml(book.isbn, book.title, book.cover_url)}</td>
             <td>${escapeHtml(book.author)}</td>
             <td>${book.publisher || "-"}</td>
             <td>${book.publication_year || "-"}</td>
@@ -352,6 +366,8 @@ document.getElementById("books-table").addEventListener("click", async (event) =
       document.getElementById("book-publisher").value = book.publisher || "";
       document.getElementById("book-year").value = book.publication_year || "";
       document.getElementById("book-copies").value = book.total_copies;
+      document.getElementById("book-cover").value = "";
+      setCoverPreview(book.cover_url || null);
       setView("manage-books");
     }
   } catch (error) {
@@ -395,7 +411,9 @@ document.getElementById("book-form").addEventListener("submit", async (event) =>
     publication_year: Number(document.getElementById("book-year").value) || null,
     total_copies: Number(document.getElementById("book-copies").value),
   };
+  const coverFile = document.getElementById("book-cover").files[0];
   try {
+    let isbn = payload.isbn;
     if (state.editingIsbn) {
       await api.updateBook(state.editingIsbn, {
         title: payload.title,
@@ -404,10 +422,15 @@ document.getElementById("book-form").addEventListener("submit", async (event) =>
         publication_year: payload.publication_year,
         total_copies: payload.total_copies,
       });
+      isbn = state.editingIsbn;
       showMessage("manage-message", "Book updated.", "success");
     } else {
       await api.createBook(payload);
       showMessage("manage-message", "Book created.", "success");
+    }
+    if (coverFile) {
+      await api.uploadBookCover(isbn, coverFile);
+      showMessage("manage-message", state.editingIsbn ? "Book and cover updated." : "Book and cover saved.", "success");
     }
     resetBookForm();
     setView("catalog");
@@ -419,10 +442,20 @@ document.getElementById("book-form").addEventListener("submit", async (event) =>
 
 document.getElementById("reset-book-form").addEventListener("click", resetBookForm);
 
+document.getElementById("book-cover").addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (!file) {
+    setCoverPreview(null);
+    return;
+  }
+  setCoverPreview(URL.createObjectURL(file));
+});
+
 function resetBookForm() {
   state.editingIsbn = null;
   document.getElementById("book-form").reset();
   document.getElementById("book-isbn").readOnly = false;
+  setCoverPreview(null);
 }
 
 async function bootstrap() {

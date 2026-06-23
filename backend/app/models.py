@@ -64,6 +64,7 @@ class Book(Base):
     publication_year = Column(Integer, nullable=True, index=True)
     total_copies = Column(Integer, nullable=False, default=1)
     available_copies = Column(Integer, nullable=False, default=1)
+    cover_url = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

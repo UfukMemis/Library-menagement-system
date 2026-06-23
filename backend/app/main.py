@@ -2,10 +2,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.database import engine
-from app.models import Base
+from app.migrations import run_migrations
 from app.routers import auth, books, borrowing, reports, reservations, users
 from app.routers.auth import init_auth
 from app.database import SessionLocal
@@ -13,7 +13,7 @@ from app.database import SessionLocal
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    run_migrations()
     db = SessionLocal()
     try:
         init_auth(db)
@@ -43,6 +43,10 @@ app.include_router(books.router)
 app.include_router(borrowing.router)
 app.include_router(reservations.router)
 app.include_router(reports.router)
+
+uploads_dir = settings.upload_path
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 
 @app.get("/health")

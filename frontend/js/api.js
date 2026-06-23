@@ -69,6 +69,11 @@ export const api = {
   deleteBook(isbn) {
     return apiRequest(`/books/${encodeURIComponent(isbn)}`, { method: "DELETE" });
   },
+  uploadBookCover(isbn, file) {
+    const body = new FormData();
+    body.append("file", file);
+    return apiRequest(`/books/${encodeURIComponent(isbn)}/cover`, { method: "POST", body });
+  },
   borrow(isbn) {
     return apiRequest("/borrow", { method: "POST", body: JSON.stringify({ isbn }) });
   },

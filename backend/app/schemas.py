@@ -69,6 +69,7 @@ class BookUpdate(BaseModel):
 class BookResponse(BookBase):
     available_copies: int
     availability_status: str
+    cover_url: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
-from app.dependencies import get_current_user, require_roles
+from app.dependencies import require_roles
 from app.models import User, UserRole
 from app.schemas import BookCreate, BookResponse, BookUpdate, PaginatedResponse
 from app.services.books import (
@@ -14,6 +15,7 @@ from app.services.books import (
     serialize_book,
     update_book,
 )
+from app.services.covers import save_cover_file
 
 router = APIRouter(prefix="/books", tags=["Books"])
 
@@ -82,6 +84,28 @@ def update_book_by_isbn(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_book(book)
+
+
+@router.post("/{isbn}/cover", response_model=BookResponse)
+async def upload_book_cover(
+    isbn: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMINISTRATOR, UserRole.LIBRARIAN)),
+):
+    book = get_book(db, isbn)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    try:
+        cover_url = await save_cover_file(settings.upload_path, isbn, file)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    book.cover_url = cover_url
+    db.commit()
+    db.refresh(book)
     return serialize_book(book)
 
 

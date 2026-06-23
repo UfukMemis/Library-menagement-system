@@ -199,6 +199,19 @@ th {
   color: var(--accent);
 }
 
+.book-cover-preview {
+  margin-top: 0.5rem;
+}
+
+.book-cover-preview img {
+  width: 72px;
+  height: 108px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  display: block;
+}
+
 .badge.unavailable,
 .badge.overdue {
   background: rgba(248, 113, 113, 0.15);
