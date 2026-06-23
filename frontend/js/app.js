@@ -35,6 +35,24 @@ function escapeHtml(text) {
     .replaceAll('"', "&quot;");
 }
 
+const HORIZONT_VIDEO_SRC = "/media/horizont.mp4";
+
+function isHorizontSearch(query) {
+  return query.trim().toLowerCase().includes("horizont");
+}
+
+function horizontVideoRowHtml() {
+  return `
+    <tr class="horizont-row">
+      <td colspan="8">
+        <div class="horizont-result">
+          <p class="horizont-label">Horizont</p>
+          <video class="horizont-video" controls playsinline preload="metadata" src="${HORIZONT_VIDEO_SRC}"></video>
+        </div>
+      </td>
+    </tr>`;
+}
+
 function bookCoverHtml(isbn, title, coverUrl) {
   const fallback = `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-S.jpg`;
   const src = coverUrl || fallback;
@@ -107,9 +125,12 @@ async function loadBooks() {
   try {
     const data = await api.getBooks(params);
     state.books = data.items;
+    const searchQuery = document.getElementById("search-input").value || "";
+    const showHorizontVideo = isHorizontSearch(searchQuery);
     const tbody = document.getElementById("books-table");
-    tbody.innerHTML = data.items
-      .map((book) => {
+    tbody.innerHTML = [
+      showHorizontVideo ? horizontVideoRowHtml() : "",
+      ...data.items.map((book) => {
         const canBorrow = state.user && book.available_copies > 0;
         const canReserve = state.user && book.available_copies === 0;
         return `
@@ -132,8 +153,8 @@ async function loadBooks() {
               }
             </td>
           </tr>`;
-      })
-      .join("");
+      }),
+    ].join("");
   } catch (error) {
     showMessage("catalog-message", error.message);
   }

@@ -209,6 +209,36 @@ th {
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid rgba(249, 115, 22, 0.35);
+}
+
+.horizont-row td {
+  padding: 1rem 0.75rem;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(10, 10, 10, 0.6));
+  border-bottom: 1px solid rgba(249, 115, 22, 0.35);
+}
+
+.horizont-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.horizont-label {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.horizont-video {
+  width: min(100%, 640px);
+  max-height: 360px;
+  border-radius: 12px;
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  background: #000;
+  box-shadow: var(--shadow);
   display: block;
 }
 
