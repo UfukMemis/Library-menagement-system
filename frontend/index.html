@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Library Management System</title>
-    <link rel="stylesheet" href="/css/styles.css?v=3" />
+    <link rel="stylesheet" href="/css/styles.css?v=6" />
   </head>
   <body>
     <header>
@@ -13,6 +13,8 @@
         <button data-view="catalog" class="active">Catalog</button>
         <button data-view="my-account">My Account</button>
         <button data-view="manage-books" class="staff-only hidden">Manage Books</button>
+        <button data-view="reservations" class="staff-only hidden">Reservations</button>
+        <button data-view="users-borrowed" class="staff-only hidden">Users Borrowed</button>
         <button data-view="reports" class="staff-only hidden">Reports</button>
         <button id="logout-btn">Logout</button>
       </nav>
@@ -88,7 +90,25 @@
           <div id="profile-box"></div>
         </div>
         <div class="panel">
+          <h3>Currently Borrowed</h3>
+          <div id="currently-borrowed-message"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Book</th>
+                <th>Borrowed</th>
+                <th>Due</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="currently-borrowed-table"></tbody>
+          </table>
+        </div>
+        <div class="panel">
           <h3>Transaction History</h3>
+          <p class="section-hint">Returned books only.</p>
           <div id="transactions-message"></div>
           <table>
             <thead>
@@ -99,13 +119,12 @@
                 <th>Due</th>
                 <th>Returned</th>
                 <th>Status</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody id="transactions-table"></tbody>
           </table>
         </div>
-        <div class="panel">
+        <div class="panel student-only">
           <h3>My Reservations</h3>
           <div id="reservations-message"></div>
           <table>
@@ -119,6 +138,78 @@
               </tr>
             </thead>
             <tbody id="reservations-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="reservations-section" class="hidden">
+        <div class="panel">
+          <h2>Reservations</h2>
+          <p class="section-hint">Pending reservations and who is waiting for each book.</p>
+          <div class="toolbar">
+            <label>
+              <input id="staff-reservations-pending-only" type="checkbox" checked />
+              Pending only
+            </label>
+            <button id="staff-reservations-refresh" class="primary">Refresh</button>
+          </div>
+          <div id="staff-reservations-message"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Book</th>
+                <th>ISBN</th>
+                <th>User</th>
+                <th>Full Name</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="staff-reservations-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="users-borrowed-section" class="hidden">
+        <div class="panel">
+          <h2>Users Borrowed</h2>
+          <p class="section-hint">Active borrows across all users. Return books or assign a new borrow.</p>
+          <form id="staff-borrow-form" class="staff-borrow-form">
+            <div class="grid two">
+              <div>
+                <label for="staff-borrow-user">User</label>
+                <select id="staff-borrow-user" required></select>
+              </div>
+              <div>
+                <label for="staff-borrow-isbn">ISBN</label>
+                <input id="staff-borrow-isbn" placeholder="Book ISBN" required />
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="primary" type="submit">Add Borrow</button>
+            </div>
+          </form>
+          <div class="toolbar">
+            <button id="users-borrowed-refresh" class="primary">Refresh</button>
+          </div>
+          <div id="users-borrowed-message"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Book</th>
+                <th>ISBN</th>
+                <th>User</th>
+                <th>Full Name</th>
+                <th>Borrowed</th>
+                <th>Due</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="users-borrowed-table"></tbody>
           </table>
         </div>
       </section>
@@ -177,6 +268,6 @@
     </main>
 
     <footer>Library Management System • FastAPI • PostgreSQL • Docker</footer>
-    <script type="module" src="/js/app.js?v=3"></script>
+    <script type="module" src="/js/app.js?v=6"></script>
   </body>
 </html>

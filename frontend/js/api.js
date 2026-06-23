@@ -77,6 +77,12 @@ export const api = {
   borrow(isbn) {
     return apiRequest("/borrow", { method: "POST", body: JSON.stringify({ isbn }) });
   },
+  staffBorrow(userId, isbn) {
+    return apiRequest("/borrow/staff", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, isbn }),
+    });
+  },
   returnBook(transactionId) {
     return apiRequest("/return", {
       method: "POST",

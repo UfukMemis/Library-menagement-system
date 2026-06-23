@@ -266,6 +266,32 @@ th {
   display: none !important;
 }
 
+.section-hint {
+  margin: -0.25rem 0 1rem;
+  color: var(--muted);
+}
+
+.empty-row {
+  text-align: center;
+  color: var(--muted);
+  padding: 1rem;
+}
+
+.staff-borrow-form {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+select {
+  width: 100%;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+}
+
 .toolbar {
   display: flex;
   gap: 0.75rem;

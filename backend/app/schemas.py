@@ -79,6 +79,11 @@ class BorrowRequest(BaseModel):
     isbn: str
 
 
+class StaffBorrowRequest(BaseModel):
+    user_id: int
+    isbn: str
+
+
 class ReturnRequest(BaseModel):
     transaction_id: int
 
@@ -93,6 +98,7 @@ class BorrowTransactionResponse(BaseModel):
     status: BorrowStatus
     book_title: Optional[str] = None
     username: Optional[str] = None
+    full_name: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -109,6 +115,7 @@ class ReservationResponse(BaseModel):
     status: ReservationStatus
     book_title: Optional[str] = None
     username: Optional[str] = None
+    full_name: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -9,6 +9,7 @@ from app.services.books import paginate
 from app.services.reservations import (
     cancel_reservation,
     create_reservation,
+    get_reservation_with_details,
     list_reservations,
     serialize_reservation,
 )
@@ -29,8 +30,8 @@ def reserve_book(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    rows, _ = list_reservations(db, user_id=reservation.user_id, page=1, page_size=1)
-    return serialize_reservation(rows[0] if rows else reservation)
+    row = get_reservation_with_details(db, reservation.reservation_id)
+    return serialize_reservation(row if row else reservation)
 
 
 @router.get("", response_model=PaginatedResponse[ReservationResponse])
@@ -76,8 +77,5 @@ def cancel(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    rows, _ = list_reservations(db, user_id=reservation.user_id, page=1, page_size=100)
-    for row in rows:
-        if row.reservation_id == reservation_id:
-            return serialize_reservation(row)
-    return serialize_reservation(reservation)
+    row = get_reservation_with_details(db, reservation.reservation_id)
+    return serialize_reservation(row if row else reservation)

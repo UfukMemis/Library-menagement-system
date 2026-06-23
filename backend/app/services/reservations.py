@@ -66,7 +66,7 @@ def list_reservations(
 
     total = query.count()
     rows = (
-        query.order_by(Reservation.reservation_date.desc())
+        query.order_by(Reservation.reservation_date.asc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
@@ -100,4 +100,14 @@ def serialize_reservation(row: Reservation) -> dict:
         "status": row.status,
         "book_title": row.book.title if row.book else None,
         "username": row.user.username if row.user else None,
+        "full_name": row.user.full_name if row.user else None,
     }
+
+
+def get_reservation_with_details(db: Session, reservation_id: int) -> Reservation | None:
+    return (
+        db.query(Reservation)
+        .options(joinedload(Reservation.book), joinedload(Reservation.user))
+        .filter(Reservation.reservation_id == reservation_id)
+        .first()
+    )

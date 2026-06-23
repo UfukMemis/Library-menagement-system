@@ -127,6 +127,7 @@ def list_transactions(
     *,
     user_id: int | None = None,
     status: BorrowStatus | None = None,
+    active_only: bool = False,
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[BorrowTransaction], int]:
@@ -140,6 +141,10 @@ def list_transactions(
         query = query.filter(BorrowTransaction.user_id == user_id)
     if status is not None:
         query = query.filter(BorrowTransaction.status == status)
+    if active_only:
+        query = query.filter(
+            BorrowTransaction.status.in_([BorrowStatus.ACTIVE, BorrowStatus.OVERDUE])
+        )
 
     total = query.count()
     rows = (
@@ -162,4 +167,14 @@ def serialize_transaction(row: BorrowTransaction) -> dict:
         "status": row.status,
         "book_title": row.book.title if row.book else None,
         "username": row.user.username if row.user else None,
+        "full_name": row.user.full_name if row.user else None,
     }
+
+
+def get_transaction_with_details(db: Session, transaction_id: int) -> BorrowTransaction | None:
+    return (
+        db.query(BorrowTransaction)
+        .options(joinedload(BorrowTransaction.book), joinedload(BorrowTransaction.user))
+        .filter(BorrowTransaction.transaction_id == transaction_id)
+        .first()
+    )

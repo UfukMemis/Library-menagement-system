@@ -11,6 +11,8 @@ const sections = {
   catalog: document.getElementById("catalog-section"),
   "my-account": document.getElementById("my-account-section"),
   "manage-books": document.getElementById("manage-books-section"),
+  reservations: document.getElementById("reservations-section"),
+  "users-borrowed": document.getElementById("users-borrowed-section"),
   reports: document.getElementById("reports-section"),
 };
 
@@ -97,6 +99,9 @@ function updateShell() {
   document.querySelectorAll(".staff-only").forEach((el) => {
     el.classList.toggle("hidden", !loggedIn || !isStaff(state.user?.role));
   });
+  document.querySelectorAll(".student-only").forEach((el) => {
+    el.classList.toggle("hidden", !loggedIn || isStaff(state.user?.role));
+  });
   if (loggedIn) setView("catalog");
 }
 
@@ -160,31 +165,52 @@ async function loadBooks() {
   }
 }
 
+function borrowRowHtml(tx, { includeReturnAction = false } = {}) {
+  return `
+    <tr>
+      <td>${tx.transaction_id}</td>
+      <td>${escapeHtml(tx.book_title || tx.isbn)}</td>
+      <td>${tx.borrow_date}</td>
+      <td>${tx.due_date}</td>
+      ${includeReturnAction ? "" : `<td>${tx.return_date || "-"}</td>`}
+      <td>${badge(tx.status)}</td>
+      ${
+        includeReturnAction
+          ? `<td>
+              ${
+                tx.status === "active" || tx.status === "overdue"
+                  ? `<button data-return="${tx.transaction_id}">Return</button>`
+                  : "-"
+              }
+            </td>`
+          : ""
+      }
+    </tr>`;
+}
+
 async function loadTransactions() {
+  showMessage("currently-borrowed-message");
   showMessage("transactions-message");
   try {
     const data = await api.getTransactions({ page: 1, page_size: 50 });
-    document.getElementById("transactions-table").innerHTML = data.items
-      .map(
-        (tx) => `
-        <tr>
-          <td>${tx.transaction_id}</td>
-          <td>${tx.book_title || tx.isbn}</td>
-          <td>${tx.borrow_date}</td>
-          <td>${tx.due_date}</td>
-          <td>${tx.return_date || "-"}</td>
-          <td>${badge(tx.status)}</td>
-          <td>
-            ${
-              tx.status === "active" || tx.status === "overdue"
-                ? `<button data-return="${tx.transaction_id}">Return</button>`
-                : "-"
-            }
-          </td>
-        </tr>`
-      )
-      .join("");
+    const activeItems = data.items.filter((tx) => tx.status === "active" || tx.status === "overdue");
+    const returnedItems = data.items.filter((tx) => tx.status === "returned");
+
+    const borrowedBody = document.getElementById("currently-borrowed-table");
+    if (!activeItems.length) {
+      borrowedBody.innerHTML = `<tr><td colspan="6" class="empty-row">No books currently borrowed.</td></tr>`;
+    } else {
+      borrowedBody.innerHTML = activeItems.map((tx) => borrowRowHtml(tx, { includeReturnAction: true })).join("");
+    }
+
+    const historyBody = document.getElementById("transactions-table");
+    if (!returnedItems.length) {
+      historyBody.innerHTML = `<tr><td colspan="6" class="empty-row">No returned books yet.</td></tr>`;
+    } else {
+      historyBody.innerHTML = returnedItems.map((tx) => borrowRowHtml(tx)).join("");
+    }
   } catch (error) {
+    showMessage("currently-borrowed-message", error.message);
     showMessage("transactions-message", error.message);
   }
 }
@@ -192,13 +218,18 @@ async function loadTransactions() {
 async function loadReservations() {
   showMessage("reservations-message");
   try {
-    const data = await api.getReservations({ page: 1, page_size: 50 });
-    document.getElementById("reservations-table").innerHTML = data.items
+    const data = await api.getReservations({ page: 1, page_size: 50, status: "pending" });
+    const tbody = document.getElementById("reservations-table");
+    if (!data.items.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-row">No pending reservations.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.items
       .map(
         (row) => `
         <tr>
           <td>${row.reservation_id}</td>
-          <td>${row.book_title || row.isbn}</td>
+          <td>${escapeHtml(row.book_title || row.isbn)}</td>
           <td>${new Date(row.reservation_date).toLocaleString()}</td>
           <td>${badge(row.status)}</td>
           <td>
@@ -213,6 +244,97 @@ async function loadReservations() {
       .join("");
   } catch (error) {
     showMessage("reservations-message", error.message);
+  }
+}
+
+async function loadStaffBorrowUsers() {
+  const select = document.getElementById("staff-borrow-user");
+  try {
+    const data = await api.getUsers({ page: 1, page_size: 100 });
+    select.innerHTML = data.items
+      .filter((user) => user.is_active)
+      .map(
+        (user) =>
+          `<option value="${user.user_id}">${escapeHtml(user.username)} — ${escapeHtml(user.full_name)}</option>`
+      )
+      .join("");
+  } catch (error) {
+    select.innerHTML = "";
+    showMessage("users-borrowed-message", error.message);
+  }
+}
+
+async function loadUsersBorrowed() {
+  showMessage("users-borrowed-message");
+  try {
+    const data = await api.getTransactions({ all_users: true, active_only: true, page: 1, page_size: 100 });
+    const tbody = document.getElementById("users-borrowed-table");
+    if (!data.items.length) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-row">No active borrows.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.items
+      .map(
+        (tx) => `
+        <tr>
+          <td>${tx.transaction_id}</td>
+          <td>${escapeHtml(tx.book_title || "-")}</td>
+          <td>${escapeHtml(tx.isbn)}</td>
+          <td>${escapeHtml(tx.username || "-")}</td>
+          <td>${escapeHtml(tx.full_name || "-")}</td>
+          <td>${tx.borrow_date}</td>
+          <td>${tx.due_date}</td>
+          <td>${badge(tx.status)}</td>
+          <td>
+            ${
+              tx.status === "active" || tx.status === "overdue"
+                ? `<button data-staff-return="${tx.transaction_id}">Return</button>`
+                : "-"
+            }
+          </td>
+        </tr>`
+      )
+      .join("");
+  } catch (error) {
+    showMessage("users-borrowed-message", error.message);
+  }
+}
+
+async function loadStaffReservations() {
+  showMessage("staff-reservations-message");
+  const pendingOnly = document.getElementById("staff-reservations-pending-only").checked;
+  try {
+    const params = { page: 1, page_size: 100 };
+    if (pendingOnly) params.status = "pending";
+    const data = await api.getReservations(params);
+    const tbody = document.getElementById("staff-reservations-table");
+    if (!data.items.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-row">No reservations found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.items
+      .map(
+        (row) => `
+        <tr>
+          <td>${row.reservation_id}</td>
+          <td>${escapeHtml(row.book_title || "-")}</td>
+          <td>${escapeHtml(row.isbn)}</td>
+          <td>${escapeHtml(row.username || "-")}</td>
+          <td>${escapeHtml(row.full_name || "-")}</td>
+          <td>${new Date(row.reservation_date).toLocaleString()}</td>
+          <td>${badge(row.status)}</td>
+          <td>
+            ${
+              row.status === "pending"
+                ? `<button data-staff-cancel-reservation="${row.reservation_id}">Cancel</button>`
+                : "-"
+            }
+          </td>
+        </tr>`
+      )
+      .join("");
+  } catch (error) {
+    showMessage("staff-reservations-message", error.message);
   }
 }
 
@@ -348,7 +470,12 @@ document.getElementById("main-nav").addEventListener("click", async (event) => {
   if (view === "my-account") {
     await loadProfile();
     await loadTransactions();
-    await loadReservations();
+    if (!isStaff(state.user?.role)) await loadReservations();
+  }
+  if (view === "reservations") await loadStaffReservations();
+  if (view === "users-borrowed") {
+    await loadStaffBorrowUsers();
+    await loadUsersBorrowed();
   }
   if (view === "reports") await loadReports();
 });
@@ -369,7 +496,17 @@ document.getElementById("books-table").addEventListener("click", async (event) =
     }
     if (reserveIsbn) {
       await api.createReservation(reserveIsbn);
-      showMessage("catalog-message", "Reservation created.", "success");
+      if (isStaff(state.user?.role)) {
+        setView("reservations");
+        await loadStaffReservations();
+        showMessage("staff-reservations-message", "Reservation created.", "success");
+      } else {
+        setView("my-account");
+        await loadProfile();
+        await loadTransactions();
+        await loadReservations();
+        showMessage("reservations-message", "Reservation created.", "success");
+      }
     }
     if (deleteIsbn) {
       await api.deleteBook(deleteIsbn);
@@ -396,16 +533,16 @@ document.getElementById("books-table").addEventListener("click", async (event) =
   }
 });
 
-document.getElementById("transactions-table").addEventListener("click", async (event) => {
+document.getElementById("currently-borrowed-table").addEventListener("click", async (event) => {
   const txId = event.target.dataset.return;
   if (!txId) return;
   try {
     await api.returnBook(Number(txId));
-    showMessage("transactions-message", "Book returned.", "success");
+    showMessage("currently-borrowed-message", "Book returned.", "success");
     await loadTransactions();
     await loadBooks();
   } catch (error) {
-    showMessage("transactions-message", error.message);
+    showMessage("currently-borrowed-message", error.message);
   }
 });
 
@@ -418,6 +555,52 @@ document.getElementById("reservations-table").addEventListener("click", async (e
     await loadReservations();
   } catch (error) {
     showMessage("reservations-message", error.message);
+  }
+});
+
+document.getElementById("staff-reservations-table").addEventListener("click", async (event) => {
+  const reservationId = event.target.dataset.staffCancelReservation;
+  if (!reservationId) return;
+  try {
+    await api.cancelReservation(Number(reservationId));
+    showMessage("staff-reservations-message", "Reservation cancelled.", "success");
+    await loadStaffReservations();
+  } catch (error) {
+    showMessage("staff-reservations-message", error.message);
+  }
+});
+
+document.getElementById("staff-reservations-refresh").addEventListener("click", loadStaffReservations);
+document.getElementById("staff-reservations-pending-only").addEventListener("change", loadStaffReservations);
+
+document.getElementById("users-borrowed-refresh").addEventListener("click", loadUsersBorrowed);
+
+document.getElementById("users-borrowed-table").addEventListener("click", async (event) => {
+  const txId = event.target.dataset.staffReturn;
+  if (!txId) return;
+  try {
+    await api.returnBook(Number(txId));
+    showMessage("users-borrowed-message", "Book returned.", "success");
+    await loadUsersBorrowed();
+    await loadBooks();
+  } catch (error) {
+    showMessage("users-borrowed-message", error.message);
+  }
+});
+
+document.getElementById("staff-borrow-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  showMessage("users-borrowed-message");
+  const userId = Number(document.getElementById("staff-borrow-user").value);
+  const isbn = document.getElementById("staff-borrow-isbn").value.trim();
+  try {
+    await api.staffBorrow(userId, isbn);
+    document.getElementById("staff-borrow-isbn").value = "";
+    showMessage("users-borrowed-message", "Borrow added.", "success");
+    await loadUsersBorrowed();
+    await loadBooks();
+  } catch (error) {
+    showMessage("users-borrowed-message", error.message);
   }
 });
 

@@ -4,9 +4,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
 from app.models import BorrowStatus, User, UserRole
-from app.schemas import BorrowRequest, BorrowTransactionResponse, PaginatedResponse, ReturnRequest
+from app.schemas import BorrowRequest, BorrowTransactionResponse, PaginatedResponse, ReturnRequest, StaffBorrowRequest
 from app.services.books import paginate
-from app.services.borrowing import borrow_book, list_transactions, return_book, serialize_transaction
+from app.services.borrowing import (
+    borrow_book,
+    get_transaction_with_details,
+    list_transactions,
+    return_book,
+    serialize_transaction,
+)
 
 router = APIRouter(tags=["Borrowing"])
 
@@ -28,7 +34,31 @@ def borrow(
     for row in rows:
         if row.transaction_id == transaction.transaction_id:
             return serialize_transaction(row)
-    return serialize_transaction(transaction)
+    row = get_transaction_with_details(db, transaction.transaction_id)
+    return serialize_transaction(row if row else transaction)
+
+
+@router.post("/borrow/staff", response_model=BorrowTransactionResponse, status_code=status.HTTP_201_CREATED)
+def staff_borrow(
+    payload: StaffBorrowRequest,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMINISTRATOR, UserRole.LIBRARIAN)),
+):
+    target_user = db.query(User).filter(User.user_id == payload.user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not target_user.is_active:
+        raise HTTPException(status_code=400, detail="User account is inactive")
+
+    try:
+        transaction = borrow_book(db, target_user, payload.isbn.strip())
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    row = get_transaction_with_details(db, transaction.transaction_id)
+    return serialize_transaction(row if row else transaction)
 
 
 @router.post("/return", response_model=BorrowTransactionResponse)
@@ -45,27 +75,38 @@ def return_item(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return serialize_transaction(transaction)
+
+    row = get_transaction_with_details(db, transaction.transaction_id)
+    return serialize_transaction(row if row else transaction)
 
 
 @router.get("/transactions", response_model=PaginatedResponse[BorrowTransactionResponse])
 def get_transactions(
     user_id: int | None = Query(None),
     status_filter: BorrowStatus | None = Query(None, alias="status"),
+    active_only: bool = Query(False),
+    all_users: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role == UserRole.STUDENT:
-        user_id = current_user.user_id
-    elif user_id is None:
-        user_id = None
+        filter_user_id = current_user.user_id
+    elif all_users:
+        if current_user.role not in (UserRole.ADMINISTRATOR, UserRole.LIBRARIAN):
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        filter_user_id = user_id
+    elif user_id is not None:
+        filter_user_id = user_id
+    else:
+        filter_user_id = current_user.user_id
 
     rows, total = list_transactions(
         db,
-        user_id=user_id,
+        user_id=filter_user_id,
         status=status_filter,
+        active_only=active_only,
         page=page,
         page_size=page_size,
     )
