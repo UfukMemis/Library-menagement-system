@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Library Management System</h1>
+      <nav id="main-nav" class="hidden">
+        <button data-view="catalog" class="active">Catalog</button>
+        <button data-view="my-account">My Account</button>
+        <button data-view="manage-books" class="staff-only hidden">Manage Books</button>
+        <button data-view="reports" class="staff-only hidden">Reports</button>
+        <button id="logout-btn">Logout</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="auth-section" class="panel">
+        <div class="hero">
+          <h2>Welcome</h2>
+          <p>
+            Browse the catalog, borrow books, reserve unavailable titles, and review your
+            transaction history. Staff accounts can manage inventory and run analytics reports.
+          </p>
+        </div>
+        <div id="auth-message"></div>
+        <div class="grid two">
+          <form id="login-form" class="panel">
+            <h3>Login</h3>
+            <label for="login-username">Username</label>
+            <input id="login-username" required />
+            <label for="login-password">Password</label>
+            <input id="login-password" type="password" required />
+            <button class="primary" type="submit">Login</button>
+          </form>
+          <form id="register-form" class="panel">
+            <h3>Register (Student)</h3>
+            <label for="register-username">Username</label>
+            <input id="register-username" required />
+            <label for="register-email">Email</label>
+            <input id="register-email" type="email" required />
+            <label for="register-fullname">Full Name</label>
+            <input id="register-fullname" required />
+            <label for="register-password">Password</label>
+            <input id="register-password" type="password" minlength="8" required />
+            <button type="submit">Create Account</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="catalog-section" class="hidden">
+        <div class="panel">
+          <h2>Book Catalog</h2>
+          <div class="toolbar">
+            <input id="search-input" placeholder="Search title, ISBN, author, publisher" />
+            <input id="author-filter" placeholder="Author filter" />
+            <input id="publisher-filter" placeholder="Publisher filter" />
+            <input id="year-filter" placeholder="Year" type="number" />
+            <label><input id="available-only" type="checkbox" /> Available only</label>
+            <button id="search-btn" class="primary">Search</button>
+          </div>
+          <div id="catalog-message"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Cover</th>
+                <th>Author</th>
+                <th>Publisher</th>
+                <th>Year</th>
+                <th>Availability</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="books-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="my-account-section" class="hidden">
+        <div class="panel">
+          <h2>My Account</h2>
+          <div id="profile-box"></div>
+        </div>
+        <div class="panel">
+          <h3>Transaction History</h3>
+          <div id="transactions-message"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Book</th>
+                <th>Borrowed</th>
+                <th>Due</th>
+                <th>Returned</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="transactions-table"></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>My Reservations</h3>
+          <div id="reservations-message"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Book</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="reservations-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="manage-books-section" class="hidden">
+        <div class="panel">
+          <h2>Manage Books</h2>
+          <form id="book-form">
+            <div class="grid two">
+              <div>
+                <label for="book-isbn">ISBN</label>
+                <input id="book-isbn" required />
+              </div>
+              <div>
+                <label for="book-title">Title</label>
+                <input id="book-title" required />
+              </div>
+              <div>
+                <label for="book-author">Author</label>
+                <input id="book-author" required />
+              </div>
+              <div>
+                <label for="book-publisher">Publisher</label>
+                <input id="book-publisher" />
+              </div>
+              <div>
+                <label for="book-year">Publication Year</label>
+                <input id="book-year" type="number" />
+              </div>
+              <div>
+                <label for="book-copies">Total Copies</label>
+                <input id="book-copies" type="number" min="0" value="1" />
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="primary" type="submit">Save Book</button>
+              <button id="reset-book-form" type="button">Reset</button>
+            </div>
+          </form>
+          <div id="manage-message"></div>
+        </div>
+      </section>
+
+      <section id="reports-section" class="hidden">
+        <div class="panel">
+          <h2>Reports & Analytics</h2>
+          <div id="reports-message"></div>
+          <div id="reports-content"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>Library Management System • FastAPI • PostgreSQL • Docker</footer>
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>
